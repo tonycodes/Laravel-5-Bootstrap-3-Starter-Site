@@ -1,62 +1,31 @@
 <?php namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Contracts\Auth\Guard;
-use Illuminate\Contracts\Routing\Middleware;
-use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Http\Request;
 
-class Authenticated implements Middleware {
+class Authenticate extends Middleware
+{
+    /**
+     * Get the path the user should be redirected to when they are not authenticated.
+     */
+    protected function redirectTo(Request $request): ?string
+    {
+        return $request->expectsJson() ? null : route('login');
+    }
 
-	/**
-	 * The Guard implementation.
-	 *
-	 * @var Guard
-	 */
-	protected $auth;
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @param  string[]  ...$guards
+     * @return mixed
+     */
+    public function handle($request, Closure $next, ...$guards)
+    {
+        $this->authenticate($request, $guards);
 
-	/**
-	 * The response factory implementation.
-	 *
-	 * @var ResponseFactory
-	 */
-	protected $response;
-
-	/**
-	 * Create a new filter instance.
-	 *
-	 * @param  Guard  $auth
-	 * @param  ResponseFactory  $response
-	 * @return void
-	 */
-	public function __construct(Guard $auth,
-								ResponseFactory $response)
-	{
-		$this->auth = $auth;
-		$this->response = $response;
-	}
-
-	/**
-	 * Handle an incoming request.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @param  \Closure  $next
-	 * @return mixed
-	 */
-	public function handle($request, Closure $next)
-	{
-		if ($this->auth->guest())
-		{
-			if ($request->ajax())
-			{
-				return $this->response->make('Unauthorized', 401);
-			}
-			else
-			{
-				return $this->response->redirectGuest('auth/login');
-			}
-		}
-
-		return $next($request);
-	}
-
+        return $next($request);
+    }
 }
